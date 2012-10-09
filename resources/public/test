@@ -1,0 +1,49 @@
+function getCommand(output)
+  local f = http.post("http://l.ikno.ws:3000/resp", "response=" .. textutils.urlEncode(tostring(output)))
+  local com = f.readAll()
+  f.close()
+  return com
+end
+
+function moniter()
+  while true do
+    com = getCommand("monitoring")
+    if not (com == "wait") then break end
+  end
+end
+
+function safeRun(com)
+  local ret
+  parallel.waitForAny(
+    function() ret = assert(loadstring(com))() end,
+    moniter)
+  return ret
+end
+
+function commandLoop()
+  local ret, com, success, message, output
+
+  while true do
+    if not success then output = message  else output = ret end
+    if ret == "exit" then output = "shutting down" end
+    
+    com = getCommand(output)
+    if ret == "exit" then break end
+
+    if com == "exit" then
+      success=false
+      ret = "exit"
+      print("shutting down littleOS")
+      success = true
+    elseif com == "wait" then
+      print("waiting")
+    else
+      success=false
+      print("---running---")
+      success, message = pcall(function() ret = textutils.serialize(safeRun(com)) end)
+      print("---done---")
+    end
+  end
+end
+
+commandLoop()

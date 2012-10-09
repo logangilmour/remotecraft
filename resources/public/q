@@ -1,0 +1,3 @@
+parallel.waitForAny(
+  assert(loadstring("while true do sleep(1) end")),
+  function() sleep(3) end)
